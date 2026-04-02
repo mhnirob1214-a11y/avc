@@ -5,7 +5,6 @@ on:
   schedule:
     - cron: '0 */5 * * *'
 
-# এটি আপনার Node.js ওয়ার্নিংটি দূর করে দিবে
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
@@ -34,4 +33,4 @@ jobs:
         CHAT_ID: ${{ secrets.CHAT_ID }}
         MY_USER: ${{ secrets.MY_USER }}
         MY_PASS: ${{ secrets.MY_PASS }}
-      run: python u- main.py
+      run: python -u main.py
