@@ -1,14 +1,18 @@
 name: FTC SMS Bot 24/7
 
 on:
-  workflow_dispatch: # ম্যানুয়ালি অন/অফ করার জন্য
+  workflow_dispatch:
   schedule:
-    - cron: '0 */5 * * *' # প্রতি ৫ ঘণ্টা পর পর রান হবে
+    - cron: '0 */5 * * *'
+
+# এটি আপনার Node.js ওয়ার্নিংটি দূর করে দিবে
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 330 # সাড়ে ৫ ঘণ্টার লিমিট
+    timeout-minutes: 330
 
     steps:
     - name: Checkout Code
