@@ -5,7 +5,7 @@ import requests
 import time
 from datetime import datetime
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+from playwright_stealth import Stealth  # <--- নতুন আপডেটের ইম্পোর্ট
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -13,7 +13,6 @@ MY_USER = os.getenv("MY_USER")
 MY_PASS = os.getenv("MY_PASS")
 
 TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
-# আপনার দেওয়া সঠিক লগিন ইউআরএল
 LOGIN_URL = "http://185.2.83.39/ints/login"
 
 sent_cache = set()
@@ -46,8 +45,10 @@ def send_telegram(num, msg):
         return False
 
 async def start_bot():
-    print(f"[{get_now()}] 🚀 FTC PRO (Corrected URL) চালু হচ্ছে...")
-    async with async_playwright() as p:
+    print(f"[{get_now()}] 🚀 FTC PRO (Updated Stealth API) চালু হচ্ছে...")
+    
+    # নতুন নিয়মে Stealth ব্যবহার করা হচ্ছে
+    async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
@@ -57,12 +58,10 @@ async def start_bot():
             viewport={'width': 1280, 'height': 720}
         )
         page = await context.new_page()
-        await stealth_async(page)
 
         async def login():
             print(f"[{get_now()}] 🔑 সঠিক লগিন পেজে ঢোকার চেষ্টা করছি...")
             try:
-                # সঠিক ইউআরএলে প্রবেশ
                 await page.goto(LOGIN_URL, wait_until="networkidle", timeout=60000)
                 await page.wait_for_timeout(3000)
 
