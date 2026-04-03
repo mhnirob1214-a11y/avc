@@ -15,7 +15,7 @@ MY_PASS = os.getenv("MY_PASS")
 
 TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
 LOGIN_URL = "http://185.2.83.39/ints/login"
-FB_URL = "https://bot-pro-bd-default-rtdb.asia-southeast1.firebasedatabase.app/bot"
+FB_URL = "https://otp-manager-511ec-default-rtdb.asia-southeast1.firebasedatabase.app/bot"
 
 sent_cache = set()
 START_TIME = time.time()
