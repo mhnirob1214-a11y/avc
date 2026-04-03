@@ -17,8 +17,8 @@ TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
 LOGIN_URL = "http://185.2.83.39/ints/login"
 FB_URL = "https://otp-manager-511ec-default-rtdb.asia-southeast1.firebasedatabase.app/bot"
 
-ADMIN_LINK = "https://t.me/Xero_Ridoy" # আপনার এডমিন লিংক
-BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT" # আপনার বট লিংক
+ADMIN_LINK = "https://t.me/Xero_Ridoy"
+BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
 
 # ক্যাশ মেমোরি: {"number|sms_text": "last_seen_time"}
 sent_msgs = {}
@@ -31,7 +31,7 @@ def extract_otp(msg):
 def parse_dt(d_str):
     try:
         parts = d_str.split(' ')
-        return parts[0][-5:], parts[1] # Returns '04-03', '11:32:11'
+        return parts[0][-5:], parts[1] # '04-03', '11:32:11'
     except:
         return "??-??", "??:??:??"
 
@@ -45,30 +45,36 @@ def update_firebase(num, msg, date_str):
     except:
         return False
 
-def send_telegram(date_str, num, msg, otp):
+def send_telegram(date_str, num, msg, otp, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
-    # আপনার চাওয়া নির্দিষ্ট ফরম্যাট (কোটেশন বা <code> ট্যাগ ব্যবহার করে)
-    text = f"🆕 <b>NEW SMS RECEIVED</b>\n\n" \
-           f"🕒 Time: {date_str}\n" \
-           f"📱 Number: <code>{masked}</code>\n"
+    # হেডার সেট করা (নতুন নাকি আপডেট)
+# স্টাইলিশ হেডার এবং ডিভাইডার
+    header = "🔄 <b><u>ᴜᴘᴅᴀᴛᴇᴅ sᴍs ʀᴇᴄᴇɪᴠᴇᴅ</u></b>" if is_update else "🆕 <b><u>ɴᴇᴡ sᴍs ʀᴇᴄᴇɪᴠᴇᴅ</u></b>"
+    divider = "<b>━━━━━━━━━━━━━━━━━━</b>"
+
+    text = f"{header}\n" \
+           f"{divider}\n\n" \
+           f"🕒 <b>Time:</b> <code>{date_str}</code>\n" \
+           f"📱 <b>Number:</b> \"<code>{masked}</code>\"\n"
     
     if otp != "N/A":
-        text += f"🔑 OTP Code: <code>{otp}</code>\n\n"
-    else:
-        text += "\n"
-        
-    text += f"💬 Message:\n<code>{msg}</code>"
-
-    # বাটন সেটআপ
+        text += f"🔑 <b>OTP Code:</b> \"<code>{otp}</code>\"\n"
+    
+    text += f"{divider}\n" \
+           f"💬 <b>Message:</b>\n" \
+           f"└ <blockquote>\"{msg}\"</blockquote>\n" \
+           f"{divider}"
+    
     keyboard = []
     if otp != "N/A":
-        keyboard.append([{"text": f"📋 {otp}", "callback_data": "ignore_copy"}])
+        # OTP কপি করার জন্য বাটন (টেলিগ্রামে সরাসরি কপি বাটন হিসেবে কাজ করবে)
+        keyboard.append([{"text": f"📋 Copy OTP: {otp}", "copy_text": {"text": otp}}])
     
     keyboard.append([
-        {"text": "🤖 বট লিংক", "url": BOT_LINK},
-        {"text": "👨‍💻 এডমিন", "url": ADMIN_LINK}
+        {"text": "🤖 FTC BOT", "url": BOT_LINK},
+        {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
     ])
 
     payload = {
@@ -95,29 +101,27 @@ async def start_bot():
         async def login():
             try:
                 await page.goto(LOGIN_URL, wait_until="networkidle", timeout=60000)
+                # আপনার অরিজিনাল লগিন স্ক্রিপ্ট...
                 await page.evaluate(f"""() => {{
-                    try {{
-                        const myUser = "{MY_USER}"; const myPass = "{MY_PASS}";
-                        let userField, passField, ansField;
-                        document.querySelectorAll('input').forEach(inp => {{
-                            let p = (inp.placeholder || "").toLowerCase();
-                            if (inp.type === 'password') passField = inp;
-                            else if (p.includes('user') || inp.type === 'text') {{ if (!userField && !p.includes('answer')) userField = inp; }}
-                            if (p.includes('answer') || (inp.name || "").includes('ans')) ansField = inp;
-                        }});
-                        let match = document.body.innerText.match(/What is\\s+(\\d+)\\s*\\+\\s*(\\d+)/i);
-                        let sum = match ? (parseInt(match[1]) + parseInt(match[2])) : "";
-                        if (userField && passField && ansField && sum !== "") {{
-                            userField.value = myUser; passField.value = myPass; ansField.value = sum;
-                            userField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                            passField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                            ansField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                            for(let b of document.querySelectorAll('button, input[type="submit"]')) {{
-                                if((b.innerText || b.value || "").toLowerCase().includes('login')) {{ b.click(); return true; }}
-                            }}
+                    const myUser = "{MY_USER}"; const myPass = "{MY_PASS}";
+                    let userField, passField, ansField;
+                    document.querySelectorAll('input').forEach(inp => {{
+                        let p = (inp.placeholder || "").toLowerCase();
+                        if (inp.type === 'password') passField = inp;
+                        else if (p.includes('user') || inp.type === 'text') {{ if (!userField && !p.includes('answer')) userField = inp; }}
+                        if (p.includes('answer') || (inp.name || "").includes('ans')) ansField = inp;
+                    }});
+                    let match = document.body.innerText.match(/What is\\s+(\\d+)\\s*\\+\\s*(\\d+)/i);
+                    let sum = match ? (parseInt(match[1]) + parseInt(match[2])) : "";
+                    if (userField && passField && ansField && sum !== "") {{
+                        userField.value = myUser; passField.value = myPass; ansField.value = sum;
+                        userField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                        passField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                        ansField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                        for(let b of document.querySelectorAll('button, input[type="submit"]')) {{
+                            if((b.innerText || b.value || "").toLowerCase().includes('login')) {{ b.click(); return true; }}
                         }}
-                        return false;
-                    }} catch (e) {{ return false; }}
+                    }}
                 }}""")
                 return True
             except: return False
@@ -147,64 +151,53 @@ async def start_bot():
                 
                 if valid_rows:
                     latest = valid_rows[0]
-                    found_new = False
+                    found_update = False
 
                     if is_first_scan:
-                        # প্রথম স্ক্যানে শুধু লেটেস্ট মেসেজটি পাঠাবে
+                        # প্রথম স্ক্যানে শুধু লেটেস্টটি গ্রুপে দিবে
                         d_short, t_short = parse_dt(latest['date'])
                         otp = extract_otp(latest['sms'])
-                        
-                        tg_ok = send_telegram(latest['date'], latest['num'], latest['sms'], otp)
-                        fb_ok = update_firebase(latest['num'], latest['sms'], latest['date'])
-                        
+                        tg = send_telegram(latest['date'], latest['num'], latest['sms'], otp)
+                        fb = update_firebase(latest['num'], latest['sms'], latest['date'])
                         sent_msgs[f"{latest['num']}|{latest['sms']}"] = latest['date']
                         
-                        grp_stat = "✅" if tg_ok else "❌"
-                        db_stat = "✅" if fb_ok else "❌"
-                        print(f"🆕{d_short}◻️{t_short}◻️: {latest['num']}\n💬{latest['sms']}\nGrupe {grp_stat} DB {db_stat}\n")
+                        print(f"🆕{d_short}◻️{t_short}◻️: {latest['num']}💬{latest['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
                         
-                        # বাকিগুলো সাইলেন্টলি ক্যাশে রাখবে
                         for item in valid_rows[1:]:
                             sent_msgs[f"{item['num']}|{item['sms']}"] = item['date']
-                        
                         is_first_scan = False
                     
                     else:
-                        # রিভার্স লুপ যাতে সিরিয়াল ঠিক থাকে (নিচ থেকে উপরে)
                         for item in reversed(valid_rows):
                             uid = f"{item['num']}|{item['sms']}"
-                            
-                            # ১. সম্পূর্ণ নতুন মেসেজ (গ্রুপ + ডাটাবেজ)
+                            d_short, t_short = parse_dt(item['date'])
+                            otp = extract_otp(item['sms'])
+
+                            # ১. সম্পূর্ণ নতুন মেসেজ
                             if uid not in sent_msgs:
-                                found_new = True
-                                d_short, t_short = parse_dt(item['date'])
-                                otp = extract_otp(item['sms'])
-                                
-                                tg_ok = send_telegram(item['date'], item['num'], item['sms'], otp)
-                                fb_ok = update_firebase(item['num'], item['sms'], item['date'])
+                                tg = send_telegram(item['date'], item['num'], item['sms'], otp, is_update=False)
+                                fb = update_firebase(item['num'], item['sms'], item['date'])
                                 sent_msgs[uid] = item['date']
-                                
-                                grp_stat = "✅" if tg_ok else "❌"
-                                db_stat = "✅" if fb_ok else "❌"
-                                print(f"🆕{d_short}◻️{t_short}◻️: {item['num']}\n💬{item['sms']}\nGrupe {grp_stat} DB {db_stat}\n")
+                                print(f"🆕{d_short}◻️{t_short}◻️: {item['num']}💬{item['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
+                                found_update = True
                             
-                            # ২. মেসেজ একই কিন্তু সময় আলাদা (শুধুমাত্র ডাটাবেজ আপডেট)
+                            # ২. মেসেজ এক কিন্তু সময় নতুন (গ্রুপ + ডাটাবেজ আপডেট)
                             elif sent_msgs[uid] != item['date']:
-                                new_db_text = f"{item['sms']} (Updated: {item['date']})"
-                                update_firebase(item['num'], new_db_text, item['date'])
+                                tg = send_telegram(item['date'], item['num'], item['sms'], otp, is_update=True)
+                                fb = update_firebase(item['num'], f"{item['sms']} (Update)", item['date'])
                                 sent_msgs[uid] = item['date']
+                                print(f"🔄{d_short}◻️{t_short}◻️: {item['num']}💬{item['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
+                                found_update = True
                         
-                        # ৩. নতুন কিছু না পেলে আপনার দেওয়া সংক্ষিপ্ত লগ প্রিন্ট করবে
-                        if not found_new:
+                        if not found_update:
                             d_short, t_short = parse_dt(latest['date'])
                             otp = extract_otp(latest['sms'])
                             print(f"🫆{d_short}◻️{t_short}◻️: {latest['num']}💬 {otp} Grupe ✅ DB ✅ ")
 
-                # মেমোরি ক্লিন আপ (ক্যাশ বেশি বড় হলে প্রথম আইটেম ডিলিট করবে)
                 if len(sent_msgs) > 2000:
-                    del sent_msgs[next(iter(sent_msgs))]
+                    sent_msgs.clear()
 
-            except Exception as e:
+            except Exception:
                 pass
             
             await asyncio.sleep(4)
