@@ -18,8 +18,9 @@ LOGIN_URL = "http://185.2.83.39/ints/login"
 
 ADMIN_LINK = "https://t.me/Xero_Ridoy"
 BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
-DV_LINK = "https://t.me/your_dv_link"  # 👉 এখানে তোমার DV link বসাও
-DAV_LINK = "https://t.me/your_dv_link" 
+DV_LINK = "https://t.me/your_dv_link"    # DV link বসাও
+DAV_LINK = "https://t.me/your_dav_link"  # DAV link বসাও
+
 sent_msgs = {}
 START_TIME = time.time()
 
@@ -48,17 +49,15 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
            f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
            f"📩 <b>Full Message:</b><blockquote>{sms_text}</blockquote>\n"
 
-    # ✅ Updated Keyboard (No Copy Button)
+    # ✅ Updated Keyboard (No Copy Button + DV & DAV in same line)
     keyboard = [
-       [
-            {"text": "DAV", "url": DV_LINK}
-        ]
         [
             {"text": "🤖 FTC BOT", "url": BOT_LINK},
             {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
         ],
         [
-            {"text": "DV", "url": DV_LINK}
+            {"text": "DV", "url": DV_LINK},
+            {"text": "DAV", "url": DAV_LINK}
         ]
     ]
 
