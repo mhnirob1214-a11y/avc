@@ -38,15 +38,15 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
-    header = "🔄 <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🆕 <b><u>NEW SMS RECEIVED</u></b>"
-    divider = "<b>━━━━━━━━━━━━━━━━━━</b>"
+    header = "🔄🛎️ <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🛎️ <b><u>NEW SMS RECEIVED</u></b>"
+    divider = "<b>━</b>"
 
     text = f"{header}\n\n" \
-           f"📱 <b>Number:</b> <code>{masked}</code>\n" \
+           f"📞 <b>Number:</b> <code>{masked}</code>\n" \
            f"💬 <b>Sms:</b> <code>{otp}</code>\n" \
-           f"🕒 <b>Date:</b> <code>{date_str}</code>\n" \
-           f"CLI <b>Service:</b> <code>{cli_source}</code>\n\n" \
-           f"💬 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n"
+           f"⏰<b>Date:</b> <code>{date_str}</code>\n" \
+           f"🌐 <b>Service:</b> <code>{cli_source}</code>\n\n" \
+           f"📩 <b>Full Message:</b><blockquote>{sms_text}</blockquote>\n"
 
     keyboard = []
     if otp != "N/A":
