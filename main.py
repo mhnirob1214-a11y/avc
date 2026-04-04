@@ -18,6 +18,7 @@ LOGIN_URL = "http://185.2.83.39/ints/login"
 
 ADMIN_LINK = "https://t.me/Xero_Ridoy"
 BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
+DV_LINK = "https://t.me/your_dv_link"  # 👉 এখানে তোমার DV link বসাও
 
 sent_msgs = {}
 START_TIME = time.time()
@@ -36,29 +37,28 @@ def parse_dt(d_str):
 
 def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    masked = num[:4] + "TAS" + num[-4:] if len(num) > 8 else num
+    masked = num[:4] + "TS" + num[-4:] if len(num) > 8 else num
 
     header = "🔄🛎️ <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🛎️ <b><u>NEW SMS RECEIVED</u></b>"
-    divider = "<b>━</b>"
 
+    # ✅ Updated Message Format
     text = f"{header}\n\n" \
            f"📞 <b>Number:</b> <code>{masked}</code>\n" \
+           f"🌐 <b>Service:</b> <code>{cli_source}</code>\n" \
            f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
-           f"🌐 <b>Service:</b> <code>{cli_source}</code>\n\n" \
            f"📩 <b>Full Message:</b><blockquote>{sms_text}</blockquote>\n"
 
-    keyboard = []
-    if otp != "N/A":
+    # ✅ Updated Keyboard (No Copy Button)
+    keyboard = [
+        [
+            {"text": "🤖 FTC BOT", "url": BOT_LINK},
+            {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
+        ],
+        [
+            {"text": "DV", "url": DV_LINK}
+        ]
+    ]
 
-    keyboard.append([
-        {"text": "🤖 FTC BOT", "url": BOT_LINK},
-        {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
-    ])
-
-    keyboard.append([
-        {"text": "🤖 FTC BOT4", "url": BOT_LINK},
-        {"text": "👨‍💻 Admin3", "url": ADMIN_LINK}
-    ])
     payload = {
         "chat_id": CHAT_ID,
         "text": text,
@@ -85,23 +85,38 @@ async def start_bot():
             try:
                 await page.goto(LOGIN_URL, wait_until="networkidle", timeout=60000)
                 await page.evaluate(f"""() => {{
-                    const myUser = "{MY_USER}"; const myPass = "{MY_PASS}";
+                    const myUser = "{MY_USER}";
+                    const myPass = "{MY_PASS}";
                     let userField, passField, ansField;
+
                     document.querySelectorAll('input').forEach(inp => {{
                         let p = (inp.placeholder || "").toLowerCase();
+
                         if (inp.type === 'password') passField = inp;
-                        else if (p.includes('user') || inp.type === 'text') {{ if (!userField && !p.includes('answer')) userField = inp; }}
+                        else if (p.includes('user') || inp.type === 'text') {{
+                            if (!userField && !p.includes('answer')) userField = inp;
+                        }}
+
                         if (p.includes('answer') || (inp.name || "").includes('ans')) ansField = inp;
                     }});
+
                     let match = document.body.innerText.match(/What is\\s+(\\d+)\\s*\\+\\s*(\\d+)/i);
                     let sum = match ? (parseInt(match[1]) + parseInt(match[2])) : "";
+
                     if (userField && passField && ansField && sum !== "") {{
-                        userField.value = myUser; passField.value = myPass; ansField.value = sum;
+                        userField.value = myUser;
+                        passField.value = myPass;
+                        ansField.value = sum;
+
                         userField.dispatchEvent(new Event('input', {{ bubbles: true }}));
                         passField.dispatchEvent(new Event('input', {{ bubbles: true }}));
                         ansField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        for(let b of document.querySelectorAll('button, input[type="submit"]')) {{
-                            if((b.innerText || b.value || "").toLowerCase().includes('login')) {{ b.click(); return true; }}
+
+                        for (let b of document.querySelectorAll('button, input[type="submit"]')) {{
+                            if ((b.innerText || b.value || "").toLowerCase().includes('login')) {{
+                                b.click();
+                                return true;
+                            }}
                         }}
                     }}
                 }}""")
@@ -123,15 +138,22 @@ async def start_bot():
 
                 valid_rows = []
                 rows = await page.query_selector_all("table tbody tr")
+
                 for row in rows:
                     cols = await row.query_selector_all("td")
-                    if len(cols) >= 7:  # CLI column should be 7th
+                    if len(cols) >= 7:
                         d = (await cols[0].inner_text()).strip()
                         n = (await cols[2].inner_text()).strip()
                         s = (await cols[5].inner_text()).strip()
-                        cli = (await cols[3].inner_text()).strip()  # CLI column
-                        if d and len(re.sub(r'\D','',n)) >= 8:
-                            valid_rows.append({"date": d, "num": n, "sms": s, "cli": cli})
+                        cli = (await cols[3].inner_text()).strip()
+
+                        if d and len(re.sub(r'\D', '', n)) >= 8:
+                            valid_rows.append({
+                                "date": d,
+                                "num": n,
+                                "sms": s,
+                                "cli": cli
+                            })
 
                 if valid_rows:
                     latest = valid_rows[0]
@@ -139,8 +161,10 @@ async def start_bot():
                     if is_first_scan:
                         otp = extract_otp(latest['sms'])
                         send_telegram(latest['date'], latest['num'], latest['sms'], otp, latest['cli'])
+
                         sent_msgs[f"{latest['num']}|{latest['sms']}"] = latest['date']
                         is_first_scan = False
+
                         for item in valid_rows[1:]:
                             sent_msgs[f"{item['num']}|{item['sms']}"] = item['date']
 
@@ -148,6 +172,7 @@ async def start_bot():
                         for item in reversed(valid_rows):
                             uid = f"{item['num']}|{item['sms']}"
                             otp = extract_otp(item['sms'])
+
                             if uid not in sent_msgs:
                                 send_telegram(item['date'], item['num'], item['sms'], otp, item['cli'])
                                 sent_msgs[uid] = item['date']
