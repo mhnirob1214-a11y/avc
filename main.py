@@ -4,17 +4,10 @@ import asyncio
 import re
 import requests
 import time
-import argparse
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-# ===== CLI থেকে Service ইনপুট =====
-parser = argparse.ArgumentParser(description="FTC SMS Bot")
-parser.add_argument("--service", type=str, default="FTC SMS", help="Service name to show in Telegram messages")
-args = parser.parse_args()
-SERVICE_SOURCE = args.service  # CLI থেকে আসা Service
-
-# ===== কনফিগারেশন =====
+# ===== CONFIG =====
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 MY_USER = os.getenv("MY_USER")
@@ -22,7 +15,6 @@ MY_PASS = os.getenv("MY_PASS")
 
 TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
 LOGIN_URL = "http://185.2.83.39/ints/login"
-FB_URL = "https://otp-manager-511ec-default-rtdb.asia-southeast1.firebasedatabase.app/bot"
 
 ADMIN_LINK = "https://t.me/Xero_Ridoy"
 BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
@@ -30,7 +22,7 @@ BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
 sent_msgs = {}
 START_TIME = time.time()
 
-# ===== ইউটিলিটি ফাংশন =====
+# ===== UTILITIES =====
 def extract_otp(msg):
     match = re.search(r'\b(\d{3,8}|\d{3}-\d{3}|\d{4}\s\d{4})\b', msg)
     return match.group(0) if match else "N/A"
@@ -42,18 +34,7 @@ def parse_dt(d_str):
     except:
         return "??-??", "??:??:??"
 
-def update_firebase(num, msg, date_str):
-    try:
-        clean_num = re.sub(r'\D', '', num)
-        url = f"{FB_URL}/sms_logs/{clean_num}.json"
-        payload = {"number": num, "message": msg, "time": date_str, "paid": False}
-        res = requests.put(url, json=payload, timeout=8)
-        return res.status_code == 200
-    except:
-        return False
-
-# ===== Telegram message পাঠানোর ফাংশন =====
-def send_telegram(date_str, num, sms_text, otp, service, is_update=False):
+def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
@@ -64,9 +45,8 @@ def send_telegram(date_str, num, sms_text, otp, service, is_update=False):
            f"📱 <b>Number:</b> <code>{masked}</code>\n" \
            f"💬 <b>Sms:</b> <code>{otp}</code>\n" \
            f"🕒 <b>Date:</b> <code>{date_str}</code>\n" \
-           f"CLI <b>Service:</b> <code>{service}</code>\n\n"
-
-    text += f"{divider}\n💬 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n{divider}"
+           f"CLI <b>Service:</b> <code>{cli_source}</code>\n\n" \
+           f"{divider}\n💬 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n{divider}"
 
     keyboard = []
     if otp != "N/A":
@@ -93,7 +73,7 @@ def send_telegram(date_str, num, sms_text, otp, service, is_update=False):
     except:
         return False
 
-# ===== Bot স্ক্যান লজিক =====
+# ===== MAIN BOT LOGIC =====
 async def start_bot():
     print("🚀 Bot started...")
 
@@ -146,21 +126,20 @@ async def start_bot():
                 rows = await page.query_selector_all("table tbody tr")
                 for row in rows:
                     cols = await row.query_selector_all("td")
-                    if len(cols) >= 6:
+                    if len(cols) >= 7:  # 7th column CLI
                         d = (await cols[0].inner_text()).strip()
                         n = (await cols[2].inner_text()).strip()
                         s = (await cols[5].inner_text()).strip()
+                        cli = (await cols[6].inner_text()).strip()  # CLI source column
                         if d and len(re.sub(r'\D','',n)) >= 8:
-                            valid_rows.append({"date": d, "num": n, "sms": s})
+                            valid_rows.append({"date": d, "num": n, "sms": s, "cli": cli})
 
                 if valid_rows:
                     latest = valid_rows[0]
-                    found_update = False
 
                     if is_first_scan:
                         otp = extract_otp(latest['sms'])
-                        tg = send_telegram(latest['date'], latest['num'], latest['sms'], otp, SERVICE_SOURCE)
-                        fb = update_firebase(latest['num'], latest['sms'], latest['date'])
+                        send_telegram(latest['date'], latest['num'], latest['sms'], otp, latest['cli'])
                         sent_msgs[f"{latest['num']}|{latest['sms']}"] = latest['date']
                         is_first_scan = False
                         for item in valid_rows[1:]:
@@ -170,18 +149,9 @@ async def start_bot():
                         for item in reversed(valid_rows):
                             uid = f"{item['num']}|{item['sms']}"
                             otp = extract_otp(item['sms'])
-
                             if uid not in sent_msgs:
-                                tg = send_telegram(item['date'], item['num'], item['sms'], otp, SERVICE_SOURCE, is_update=False)
-                                fb = update_firebase(item['num'], item['sms'], item['date'])
+                                send_telegram(item['date'], item['num'], item['sms'], otp, item['cli'])
                                 sent_msgs[uid] = item['date']
-                                found_update = True
-
-                            elif sent_msgs[uid] != item['date']:
-                                tg = send_telegram(item['date'], item['num'], f"{item['sms']} (Update)", otp, SERVICE_SOURCE, is_update=True)
-                                fb = update_firebase(item['num'], f"{item['sms']} (Update)", item['date'])
-                                sent_msgs[uid] = item['date']
-                                found_update = True
 
                 if len(sent_msgs) > 2000:
                     sent_msgs.clear()
