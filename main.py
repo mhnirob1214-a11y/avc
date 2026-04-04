@@ -36,7 +36,7 @@ def parse_dt(d_str):
 
 def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
+    masked = num[:4] + "TAS" + num[-4:] if len(num) > 8 else num
 
     header = "🔄🛎️ <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🛎️ <b><u>NEW SMS RECEIVED</u></b>"
     divider = "<b>━</b>"
@@ -49,16 +49,16 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
 
     keyboard = []
     if otp != "N/A":
-        keyboard.append([{
-            "text": f"📋 Copy OTP: {otp}",
-            "switch_inline_query_current_chat": otp
-        }])
 
     keyboard.append([
         {"text": "🤖 FTC BOT", "url": BOT_LINK},
         {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
     ])
 
+    keyboard.append([
+        {"text": "🤖 FTC BOT4", "url": BOT_LINK},
+        {"text": "👨‍💻 Admin3", "url": ADMIN_LINK}
+    ])
     payload = {
         "chat_id": CHAT_ID,
         "text": text,
