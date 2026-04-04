@@ -1,4 +1,4 @@
-name: FTC SMS Bot 24/7
+name: TS SMS Bot 24/7
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
         pip install -r requirements.txt
         playwright install chromium --with-deps
 
-    - name: Start FTC Bot
+    - name: Start TS Bot
       env:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         CHAT_ID: ${{ secrets.CHAT_ID }}
