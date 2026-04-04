@@ -5,7 +5,6 @@ import re
 import requests
 import time
 import argparse
-from datetime import datetime
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
@@ -13,7 +12,7 @@ from playwright_stealth import Stealth
 parser = argparse.ArgumentParser(description="FTC SMS Bot")
 parser.add_argument("--service", type=str, default="FTC SMS", help="Service name to show in Telegram messages")
 args = parser.parse_args()
-SERVICE_SOURCE = args.service  # CLI থেকে নেওয়া service
+SERVICE_SOURCE = args.service  # CLI থেকে আসা Service
 
 # ===== কনফিগারেশন =====
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -33,13 +32,13 @@ START_TIME = time.time()
 
 # ===== ইউটিলিটি ফাংশন =====
 def extract_otp(msg):
-    match = re.search(r'\b(\d{4,8}|\d{3}-\d{3}|\d{4}\s\d{4})\b', msg)
-    return match.group(1) if match else "N/A"
+    match = re.search(r'\b(\d{3,8}|\d{3}-\d{3}|\d{4}\s\d{4})\b', msg)
+    return match.group(0) if match else "N/A"
 
 def parse_dt(d_str):
     try:
         parts = d_str.split(' ')
-        return parts[0][-5:], parts[1]  # '04-03', '11:32:11'
+        return parts[0][-5:], parts[1]
     except:
         return "??-??", "??:??:??"
 
@@ -53,23 +52,21 @@ def update_firebase(num, msg, date_str):
     except:
         return False
 
-# ===== Telegram ম্যাসেজ পাঠানোর ফাংশন =====
-def send_telegram(date_str, num, msg, otp, source, is_update=False):
+# ===== Telegram message পাঠানোর ফাংশন =====
+def send_telegram(date_str, num, sms_text, otp, service, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
-    header = "🔄 <b><u>ᴜᴘᴅᴀᴛᴇᴅ sᴍs ʀᴇᴄᴇɪᴠᴇᴅ</u></b>" if is_update else "🆕 <b><u>ɴᴇᴡ sᴍs ʀᴇᴄᴇɪᴠᴇᴅ</u></b>"
+    header = "🔄 <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🆕 <b><u>NEW SMS RECEIVED</u></b>"
     divider = "<b>━━━━━━━━━━━━━━━━━━</b>"
 
     text = f"{header}\n{divider}\n\n" \
-           f"🕒 <b>Time:</b> <code>{date_str}</code>\n" \
            f"📱 <b>Number:</b> <code>{masked}</code>\n" \
-           f"🛠️ <b>Service:</b> <code>{source}</code>\n\n"
+           f"💬 <b>Sms:</b> <code>{otp}</code>\n" \
+           f"🕒 <b>Date:</b> <code>{date_str}</code>\n" \
+           f"CLI <b>Service:</b> <code>{service}</code>\n\n"
 
-    if otp != "N/A":
-        text += f"🔑 <b>OTP Code:</b> <code>{otp}</code>\n"
-
-    text += f"{divider}\n💬 <b>Message:</b>\n└ <blockquote>{msg}</blockquote>\n{divider}"
+    text += f"{divider}\n💬 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n{divider}"
 
     keyboard = []
     if otp != "N/A":
@@ -98,7 +95,7 @@ def send_telegram(date_str, num, msg, otp, source, is_update=False):
 
 # ===== Bot স্ক্যান লজিক =====
 async def start_bot():
-    print("🚀 বট চালু হচ্ছে...")
+    print("🚀 Bot started...")
 
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -161,40 +158,30 @@ async def start_bot():
                     found_update = False
 
                     if is_first_scan:
-                        d_short, t_short = parse_dt(latest['date'])
                         otp = extract_otp(latest['sms'])
                         tg = send_telegram(latest['date'], latest['num'], latest['sms'], otp, SERVICE_SOURCE)
                         fb = update_firebase(latest['num'], latest['sms'], latest['date'])
                         sent_msgs[f"{latest['num']}|{latest['sms']}"] = latest['date']
-                        print(f"🆕{d_short}◻️{t_short}◻️: {latest['num']}💬{latest['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
+                        is_first_scan = False
                         for item in valid_rows[1:]:
                             sent_msgs[f"{item['num']}|{item['sms']}"] = item['date']
-                        is_first_scan = False
 
                     else:
                         for item in reversed(valid_rows):
                             uid = f"{item['num']}|{item['sms']}"
-                            d_short, t_short = parse_dt(item['date'])
                             otp = extract_otp(item['sms'])
 
                             if uid not in sent_msgs:
                                 tg = send_telegram(item['date'], item['num'], item['sms'], otp, SERVICE_SOURCE, is_update=False)
                                 fb = update_firebase(item['num'], item['sms'], item['date'])
                                 sent_msgs[uid] = item['date']
-                                print(f"🆕{d_short}◻️{t_short}◻️: {item['num']}💬{item['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
                                 found_update = True
 
                             elif sent_msgs[uid] != item['date']:
                                 tg = send_telegram(item['date'], item['num'], f"{item['sms']} (Update)", otp, SERVICE_SOURCE, is_update=True)
                                 fb = update_firebase(item['num'], f"{item['sms']} (Update)", item['date'])
                                 sent_msgs[uid] = item['date']
-                                print(f"🔄{d_short}◻️{t_short}◻️: {item['num']}💬{item['sms']}\nGrupe {'✅' if tg else '❌'} DB {'✅' if fb else '❌'}\n")
                                 found_update = True
-
-                        if not found_update:
-                            d_short, t_short = parse_dt(latest['date'])
-                            otp = extract_otp(latest['sms'])
-                            print(f"🫆{d_short}◻️{t_short}◻️: {latest['num']}💬 {otp} Grupe ✅ DB ✅ ")
 
                 if len(sent_msgs) > 2000:
                     sent_msgs.clear()
