@@ -42,7 +42,7 @@ def send_telegram(date_str, num, msg, is_system_msg=False, system_text=""):
         otp = otp_match.group(1) if otp_match else ""
 
         text = f"🆕 <b>NEW SMS RECEIVED</b>\n\n" \
-               f"🕒 <b>Time:</b> <code>{date_str}</code>\n" \
+               f"🕒 <b>Timer:</b> <code>{date_str}</code>\n" \
                f"📱 <b>Number:</b> <code>{masked}</code>\n"
         if otp: text += f"🔑 <b>OTP Code:</b> <code>{otp}</code>\n"
         text += f"\n💬 <b>Message:</b>\n<code>{msg}</code>"
