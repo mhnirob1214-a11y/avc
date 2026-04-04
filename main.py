@@ -130,7 +130,7 @@ async def start_bot():
                         d = (await cols[0].inner_text()).strip()
                         n = (await cols[2].inner_text()).strip()
                         s = (await cols[5].inner_text()).strip()
-                        cli = (await cols[6].inner_text()).strip()  # CLI column
+                        cli = (await cols[3].inner_text()).strip()  # CLI column
                         if d and len(re.sub(r'\D','',n)) >= 8:
                             valid_rows.append({"date": d, "num": n, "sms": s, "cli": cli})
 
