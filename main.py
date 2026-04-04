@@ -19,7 +19,7 @@ LOGIN_URL = "http://185.2.83.39/ints/login"
 ADMIN_LINK = "https://t.me/Xero_Ridoy"
 BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
 DV_LINK = "https://t.me/your_dv_link"    # DV link বসাও
-DAV_LINK = "https://t.me/your_dav_link"  # DAV link বসাও
+CN_LINK = "https://t.me/your_dav_link"  # DAV link বসাও
 
 sent_msgs = {}
 START_TIME = time.time()
@@ -40,7 +40,7 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "TS" + num[-4:] if len(num) > 8 else num
 
-    header = "🔄🛎️ <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🛎️ <b><u>NEW SMS RECEIVED</u></b>"
+    header = "🔄🛎️ <b>UPDATED SMS RECEIVED</b>" if is_update else "🛎️ <b>NEW SMS RECEIVED</b>"
 
     # ✅ Updated Message Format
     text = f"{header}\n\n" \
@@ -52,12 +52,12 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     # ✅ Updated Keyboard (No Copy Button + DV & DAV in same line)
     keyboard = [
         [
-            {"text": "🤖 FTC BOT", "url": BOT_LINK},
+            {"text": "🤖 Number bot BOT", "url": BOT_LINK},
             {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
         ],
         [
-            {"text": "DV", "url": DV_LINK},
-            {"text": "DAV", "url": DAV_LINK}
+            {"text": "Channel", "url": CN_LINK},
+            {"text": "Developer", "url": DV_LINK}
         ]
     ]
 
