@@ -39,7 +39,6 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
     header = "🔄🛎️ <b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🆕🛎️ <b><u>NEW SMS RECEIVED</u></b>"
-    divider = "<b>━━━━━━━━━━━━━━━━━━</b>"
 
     text = f"{header}\n{divider}\n\n" \
            f"📱 <b>Number:</b> <code>{masked}</code>\n" \
