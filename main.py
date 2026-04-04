@@ -17,9 +17,9 @@ TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
 LOGIN_URL = "http://185.2.83.39/ints/login"
 
 ADMIN_LINK = "https://t.me/Mhnirob1"
-BOT_LINK = "https://t.me/OTP_MANGER_BOT"
+BOT_LINK = "https://t.me/tsall_bot"
 DV_LINK = "https://t.me/Mhnirob1"    # DV link বসাও
-CN_LINK = "https://t.me/your_dav_link"  # DAV link বসাও
+CN_LINK = "https://t.me/TS_CHENNEL"  # DAV link বসাও
 
 sent_msgs = {}
 START_TIME = time.time()
@@ -52,8 +52,8 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     # ✅ Updated Keyboard (No Copy Button + DV & DAV in same line)
     keyboard = [
         [
-            {"text": "🔢Number bot", "url": BOT_LINK},
-            {"text": "👨‍🦲Admin", "url": ADMIN_LINK}
+            {"text": "👨‍🦲Admin", "url": ADMIN_LINK},
+            {"text": "🔢Number bot", "url": BOT_LINK}
         ],
         [
             {"text": "💥Channel", "url": CN_LINK},
