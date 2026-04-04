@@ -13,7 +13,7 @@ from playwright_stealth import Stealth
 parser = argparse.ArgumentParser(description="FTC SMS Bot")
 parser.add_argument("--service", type=str, default="FTC SMS", help="Service name to show in Telegram messages")
 args = parser.parse_args()
-SERVICE_SOURCE = args.service
+SERVICE_SOURCE = args.service  # CLI থেকে নেওয়া service
 
 # ===== কনফিগারেশন =====
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -54,7 +54,7 @@ def update_firebase(num, msg, date_str):
         return False
 
 # ===== Telegram ম্যাসেজ পাঠানোর ফাংশন =====
-def send_telegram(date_str, num, msg, otp, source="", is_update=False):
+def send_telegram(date_str, num, msg, otp, source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
 
