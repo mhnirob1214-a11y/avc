@@ -43,9 +43,10 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
 
     text = f"{header}\n\n" \
            f"📞 <b>Number:</b> <code>{masked}</code>\n" \
-           f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
-           f"⏰<b>Date:</b> <code>{date_str}</code>\n" \
            f"🌐 <b>Service:</b> <code>{cli_source}</code>\n\n" \
+           f"⏰<b>Date:</b> <code>{date_str(Off)}</code>\n" \
+           f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
+
            f"📩 <b>Full Message:</b><blockquote>{sms_text}</blockquote>\n"
 
     keyboard = []
