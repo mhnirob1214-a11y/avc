@@ -45,8 +45,8 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     # ✅ Updated Message Format
     text = f"{header}\n\n" \
            f"📞 <b>Number:</b> <code>{masked}</code>\n" \
-           f"🌐 <b>Service:</b> <code>{cli_source}</code>\n" \
-           f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
+           f"🌐 <b>Service:</b> <code>{cli_source}</code>\n\n" \
+           f"🔑 <b>OTP:</b> <code>{otp}</code>\n\n" \
            f"📩 <b>Full Message:</b><blockquote>{sms_text}</blockquote>\n"
 
     # ✅ Updated Keyboard (No Copy Button + DV & DAV in same line)
