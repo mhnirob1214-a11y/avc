@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import asyncio
 import re
@@ -10,7 +11,7 @@ from playwright_stealth import Stealth
 
 # ===== CLI থেকে Service ইনপুট =====
 parser = argparse.ArgumentParser(description="FTC SMS Bot")
-parser.add_argument("--service", type=str, default="Unknown Service", help="Service name to show in Telegram messages")
+parser.add_argument("--service", type=str, default="FTC SMS", help="Service name to show in Telegram messages")
 args = parser.parse_args()
 SERVICE_SOURCE = args.service
 
@@ -62,27 +63,21 @@ def send_telegram(date_str, num, msg, otp, source="", is_update=False):
 
     text = f"{header}\n{divider}\n\n" \
            f"🕒 <b>Time:</b> <code>{date_str}</code>\n" \
-           f"📱 <b>Number:</b> \"<code>{masked}</code>\"\n"
-
-    if source:
-        text += f"🛠️ <b>Service:</b> <code>{source}</code>\n\n"
+           f"📱 <b>Number:</b> <code>{masked}</code>\n" \
+           f"🛠️ <b>Service:</b> <code>{source}</code>\n\n"
 
     if otp != "N/A":
-        text += f"🔑 <b>OTP Code:</b> \"<code>{otp}</code>\"\n"
+        text += f"🔑 <b>OTP Code:</b> <code>{otp}</code>\n"
 
-    text += f"{divider}\n💬 <b>Message:</b>\n└ <blockquote>\"{msg}\"</blockquote>\n{divider}"
+    text += f"{divider}\n💬 <b>Message:</b>\n└ <blockquote>{msg}</blockquote>\n{divider}"
 
-    # Telegram inline_keyboard
     keyboard = []
-
-    # OTP কপি বাটন (switch_inline_query_current_chat ব্যবহার)
     if otp != "N/A":
         keyboard.append([{
             "text": f"📋 Copy OTP: {otp}",
             "switch_inline_query_current_chat": otp
         }])
 
-    # BOT এবং Admin বাটন
     keyboard.append([
         {"text": "🤖 FTC BOT", "url": BOT_LINK},
         {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
