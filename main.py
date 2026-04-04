@@ -27,13 +27,6 @@ def extract_otp(msg):
     match = re.search(r'\b(\d{3,8}|\d{3}-\d{3}|\d{4}\s\d{4})\b', msg)
     return match.group(0) if match else "N/A"
 
-def parse_dt(d_str):
-    try:
-        parts = d_str.split(' ')
-        return parts[0][-5:], parts[1]
-    except:
-        return "??-??", "??:??:??"
-
 def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     masked = num[:4] + "XXX" + num[-4:] if len(num) > 8 else num
@@ -41,20 +34,20 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     header = "🔄 🛎️<b><u>UPDATED SMS RECEIVED</u></b>" if is_update else "🆕🛎️ <b><u>NEW SMS RECEIVED</u></b>"
     divider = "<b>━━━━━━━━━━━━━━━━━━</b>"
 
-    text = f"{header}\n{divider}\n\n" \
-           f"⏰ <b>Date:</b> <code>{date_str}</code>\n" \
-           f"📞 <b>Number:</b> <code>{masked}</code>\n" \
-           f"🌐Service <b>Service:</b> <code>{cli_source}</code>\n\n" \
-           f"🔑 <b>OTP:</b> <code>{otp}</code>\n" \
-           
-           f"{divider}\n📩 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n{divider}"
+    text = (
+        f"{header}\n{divider}\n\n"
+        f"⏰ <b>Date:</b> <code>{date_str}</code>\n"
+        f"📞 <b>Number:</b> <code>{masked}</code>\n"
+        f"🌐 <b>Service:</b> <code>{cli_source}</code>\n\n"
+        f"🔑 <b>OTP:</b> <code>{otp}</code>\n"
+        f"{divider}\n📩 <b>Full Message:</b>\n└ <blockquote>{sms_text}</blockquote>\n{divider}"
+    )
 
+    # Inline keyboard
     keyboard = []
     if otp != "N/A":
-        keyboard.append([{
-            {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
-        }])
-
+        keyboard.append([{"text": "👨‍💻 Admin", "url": ADMIN_LINK}])
+    
     keyboard.append([
         {"text": "🤖 FTC BOT", "url": BOT_LINK},
         {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
@@ -70,44 +63,55 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     try:
         res = requests.post(url, json=payload, timeout=10)
         return res.status_code == 200
-    except:
+    except Exception as e:
+        print(f"Telegram send error: {e}")
         return False
 
 # ===== MAIN BOT LOGIC =====
 async def start_bot():
     print("🚀 Bot started...")
 
-    async with Stealth().use_async(async_playwright()) as p:
+    async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
         context = await browser.new_context(viewport={'width': 1280, 'height': 720})
         page = await context.new_page()
+        await Stealth().use_async(page)
 
         async def login():
             try:
                 await page.goto(LOGIN_URL, wait_until="networkidle", timeout=60000)
-                await page.evaluate(f"""() => {{
-                    const myUser = "{MY_USER}"; const myPass = "{MY_PASS}";
-                    let userField, passField, ansField;
-                    document.querySelectorAll('input').forEach(inp => {{
-                        let p = (inp.placeholder || "").toLowerCase();
-                        if (inp.type === 'password') passField = inp;
-                        else if (p.includes('user') || inp.type === 'text') {{ if (!userField && !p.includes('answer')) userField = inp; }}
-                        if (p.includes('answer') || (inp.name || "").includes('ans')) ansField = inp;
-                    }});
-                    let match = document.body.innerText.match(/What is\\s+(\\d+)\\s*\\+\\s*(\\d+)/i);
-                    let sum = match ? (parseInt(match[1]) + parseInt(match[2])) : "";
-                    if (userField && passField && ansField && sum !== "") {{
-                        userField.value = myUser; passField.value = myPass; ansField.value = sum;
-                        userField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        passField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        ansField.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                        for(let b of document.querySelectorAll('button, input[type="submit"]')) {{
-                            if((b.innerText || b.value || "").toLowerCase().includes('login')) {{ b.click(); return true; }}
+                # Fill login form
+                await page.evaluate(f"""
+                    () => {{
+                        const myUser = "{MY_USER}";
+                        const myPass = "{MY_PASS}";
+                        let userField, passField, ansField;
+                        document.querySelectorAll('input').forEach(inp => {{
+                            let p = (inp.placeholder || "").toLowerCase();
+                            if (inp.type === 'password') passField = inp;
+                            else if (p.includes('user') || inp.type === 'text') {{
+                                if (!userField && !p.includes('answer')) userField = inp;
+                            }}
+                            if (p.includes('answer') || (inp.name || "").includes('ans')) ansField = inp;
+                        }});
+                        let match = document.body.innerText.match(/What is\\s+(\\d+)\\s*\\+\\s*(\\d+)/i);
+                        let sum = match ? (parseInt(match[1]) + parseInt(match[2])) : "";
+                        if (userField && passField && ansField && sum !== "") {{
+                            userField.value = myUser; 
+                            passField.value = myPass; 
+                            ansField.value = sum;
+                            userField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            passField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            ansField.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            for(let b of document.querySelectorAll('button, input[type="submit"]')) {{
+                                if((b.innerText || b.value || "").toLowerCase().includes('login')) {{ b.click(); return true; }}
+                            }}
                         }}
                     }}
-                }}""")
+                """)
                 return True
-            except:
+            except Exception as e:
+                print(f"Login error: {e}")
                 return False
 
         await login()
@@ -122,15 +126,16 @@ async def start_bot():
                     await login()
                     continue
 
-                valid_rows = []
                 rows = await page.query_selector_all("table tbody tr")
+                valid_rows = []
+
                 for row in rows:
                     cols = await row.query_selector_all("td")
-                    if len(cols) >= 7:  # CLI column should be 7th
+                    if len(cols) >= 7:
                         d = (await cols[0].inner_text()).strip()
                         n = (await cols[2].inner_text()).strip()
                         s = (await cols[5].inner_text()).strip()
-                        cli = (await cols[3].inner_text()).strip()  # CLI column
+                        cli = (await cols[3].inner_text()).strip()
                         if d and len(re.sub(r'\D','',n)) >= 8:
                             valid_rows.append({"date": d, "num": n, "sms": s, "cli": cli})
 
@@ -144,7 +149,6 @@ async def start_bot():
                         is_first_scan = False
                         for item in valid_rows[1:]:
                             sent_msgs[f"{item['num']}|{item['sms']}"] = item['date']
-
                     else:
                         for item in reversed(valid_rows):
                             uid = f"{item['num']}|{item['sms']}"
@@ -156,8 +160,8 @@ async def start_bot():
                 if len(sent_msgs) > 2000:
                     sent_msgs.clear()
 
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Main loop error: {e}")
 
             await asyncio.sleep(4)
 
