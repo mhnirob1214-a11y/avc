@@ -16,9 +16,9 @@ MY_PASS = os.getenv("MY_PASS")
 TARGET_URL = "http://185.2.83.39/ints/agent/SMSCDRReports"
 LOGIN_URL = "http://185.2.83.39/ints/login"
 
-ADMIN_LINK = "https://t.me/Xero_Ridoy"
-BOT_LINK = "https://t.me/FTC_SUPER_SMS_BOT"
-DV_LINK = "https://t.me/your_dv_link"    # DV link বসাও
+ADMIN_LINK = "https://t.me/Mhnirob1"
+BOT_LINK = "https://t.me/OTP_MANGER_BOT"
+DV_LINK = "https://t.me/Mhnirob1"    # DV link বসাও
 CN_LINK = "https://t.me/your_dav_link"  # DAV link বসাও
 
 sent_msgs = {}
@@ -52,12 +52,12 @@ def send_telegram(date_str, num, sms_text, otp, cli_source, is_update=False):
     # ✅ Updated Keyboard (No Copy Button + DV & DAV in same line)
     keyboard = [
         [
-            {"text": "🤖 Number bot BOT", "url": BOT_LINK},
-            {"text": "👨‍💻 Admin", "url": ADMIN_LINK}
+            {"text": "🔢Number bot", "url": BOT_LINK},
+            {"text": "👨‍🦲Admin", "url": ADMIN_LINK}
         ],
         [
-            {"text": "Channel", "url": CN_LINK},
-            {"text": "Developer", "url": DV_LINK}
+            {"text": "💥Channel", "url": CN_LINK},
+            {"text": "💻 Developer", "url": DV_LINK}
         ]
     ]
 
